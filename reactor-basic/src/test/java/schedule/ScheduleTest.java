@@ -8,6 +8,8 @@ import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
+import java.util.logging.Level;
+
 public class ScheduleTest {
     private Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -15,7 +17,7 @@ public class ScheduleTest {
     void publishOn() {
         Flux.range(1, 10)
                 .publishOn(Schedulers.newElastic("PUB P1"))
-                .log()
+                .log(null, Level.FINE)
                 .subscribe(new BaseSubscriber<Integer>() {
                     @Override
                     protected void hookOnSubscribe(Subscription subscription) {
@@ -63,12 +65,23 @@ public class ScheduleTest {
 
     @Test
     void pubSubOn() throws Exception {
-        Flux.range(1, 20)
+        Flux.range(1, 6)
                 .log()
-                .map(i -> i + 20)
+                .map(i -> {
+                    logger.info("map1: " + i + " --> " + (i + 20));
+                    return i + 20;
+                })
                 .subscribeOn(Schedulers.newParallel("SUB", 2))
-                .map(i -> i + 100)
-                .publishOn(Schedulers.newParallel("PUB", 2))
+                .map(i -> {
+                    logger.info("map2: " + i + " --> " + (i + 100));
+                    return i + 100;
+                })
+                .publishOn(Schedulers.newParallel("PUB1", 2))
+                .map(i -> {
+                    logger.info("map3: " + i + " --> " + (i + 1000));
+                    return i + 1000;
+                })
+                .publishOn(Schedulers.newParallel("PUB2", 2))
                 .subscribe(new BaseSubscriber<Integer>() {
                     @Override
                     protected void hookOnSubscribe(Subscription subscription) {
