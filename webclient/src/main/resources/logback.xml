@@ -6,9 +6,9 @@
 			<pattern>%d %5p %t %c{2} - %m%n</pattern>
 		</encoder>
 	</appender>
-	<root level="DEBUG">
+	<root level="INFO">
 		<appender-ref ref="stdout" />
 	</root>
 
-	<!--<logger name="org.springframework.web.servlet" level="DEBUG" />-->
+	<logger name="reactor.ipc.netty.http.client" level="INFO" />
 </configuration>
