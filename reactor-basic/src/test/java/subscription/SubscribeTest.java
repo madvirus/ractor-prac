@@ -31,13 +31,13 @@ public class SubscribeTest {
             public void onSubscribe(Subscription s) {
                 System.out.println("Subscriber.onSubscribe");
                 this.subscription = s;
-                this.subscription.request(1);
+                this.subscription.request(Long.MAX_VALUE);
             }
 
             @Override
             public void onNext(Integer i) {
                 System.out.println("Subscriber.onNext: " + i);
-                this.subscription.request(1);
+                // this.subscription.request(1);
             }
 
             @Override
