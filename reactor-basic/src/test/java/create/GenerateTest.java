@@ -1,6 +1,8 @@
 package create;
 
 import org.junit.jupiter.api.Test;
+import org.reactivestreams.Subscription;
+import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
@@ -13,7 +15,7 @@ public class GenerateTest {
                     return 0;
                 },
                 (state, sink) -> { // BiFunction<S, SynchronousSink<T>, S> generator
-                    System.out.println("sink.next");
+                    System.out.println("sink.next for " + state);
                     sink.next("3 x " + state + " = " + 3 * state); // 한 번에 한 next()만 가능
                     if (state == 10) {
                         System.out.println("sink.complete");
@@ -21,6 +23,31 @@ public class GenerateTest {
                     }
                     return state + 1;
                 });
+
+        flux.subscribe(new BaseSubscriber<String>() {
+            private int count = 0;
+
+            @Override
+            protected void hookOnSubscribe(Subscription subscription) {
+                System.out.println("Subscriber.onSubscribe: request next 3 items");
+                request(3);
+            }
+
+            @Override
+            protected void hookOnNext(String value) {
+                System.out.println("Subscriber.onNext: " + value);
+                count++;
+                if (count % 3 == 0) {
+                    System.out.println("Subscriber.onNext: request next 3 items");
+                    request(3);
+                }
+            }
+
+            @Override
+            protected void hookOnComplete() {
+                System.out.println("Subscriber.onComplete");
+            }
+        });
 
         StepVerifier.create(flux)
                 .expectNext("3 x 0 = 0")

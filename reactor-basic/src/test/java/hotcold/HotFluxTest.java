@@ -11,6 +11,7 @@ public class HotFluxTest {
 
     private Flux<String> createHotFlux() {
         //Flux.create()
+        Flux.using(null, null, null);
         return null;
     }
 }
