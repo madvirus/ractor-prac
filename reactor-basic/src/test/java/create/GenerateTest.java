@@ -24,7 +24,7 @@ public class GenerateTest {
                     return state + 1;
                 });
 
-        flux.subscribe(new BaseSubscriber<String>() {
+        flux.subscribe(new BaseSubscriber<>() {
             private int count = 0;
 
             @Override
