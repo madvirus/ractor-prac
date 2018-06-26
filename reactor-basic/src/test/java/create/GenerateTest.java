@@ -4,11 +4,20 @@ import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.SynchronousSink;
 import reactor.test.StepVerifier;
 
 public class GenerateTest {
+
     @Test
     void fluxGenerate() {
+        Flux<String> seq = Flux.generate((SynchronousSink<String> sink) -> {
+
+        });
+    }
+
+    @Test
+    void fluxGenerateWithState() {
         Flux<String> flux = Flux.generate(
                 () -> { // Callable<S> stateSupplier
                     System.out.println("init stateSupplier");
