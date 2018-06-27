@@ -2,32 +2,84 @@ package create;
 
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.SynchronousSink;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 
-public class GenerateTest {
+import java.util.Random;
+import java.util.function.Consumer;
 
+public class GenerateTest {
+    private Logger logger = LoggerFactory.getLogger("GenerateTest");
     @Test
     void fluxGenerate() {
-        Flux<String> seq = Flux.generate((SynchronousSink<String> sink) -> {
+        Consumer<SynchronousSink<Integer>> randGen = new Consumer<>() {
+            private int emitCount = 0;
+            private Random rand = new Random();
 
+            @Override
+            public void accept(SynchronousSink<Integer> sink) {
+                emitCount++;
+                int data = rand.nextInt(100) + 1;
+                logger.info("Generator sink next " + data);
+                sink.next(data);
+                if (emitCount == 10) {
+                    logger.info("Generator sink complete");
+                    sink.complete();
+                }
+            }
+        };
+
+        Flux<Integer> seq = Flux.generate(randGen);
+        seq
+                .subscribeOn(Schedulers.newElastic("SUB1"))
+                .publishOn(Schedulers.newElastic("PUB1"))
+                .subscribe(new BaseSubscriber<>() {
+            private int receiveCount = 0;
+            @Override
+            protected void hookOnSubscribe(Subscription subscription) {
+                logger.info("Subscriber#onSubscribe");
+                logger.info("Subscriber request first 3 items");
+                request(3);
+            }
+
+            @Override
+            protected void hookOnNext(Integer value) {
+                logger.info("Subscriber#onNext: " + value);
+                receiveCount++;
+                if (receiveCount % 3 == 0) {
+                    logger.info("Subscriber request next 3 items");
+                    request(3);
+                }
+            }
+
+            @Override
+            protected void hookOnComplete() {
+                logger.info("Subscriber#onComplete");
+            }
         });
+        try {
+            Thread.sleep(1000L);
+        } catch (InterruptedException e) {
+        }
     }
 
     @Test
     void fluxGenerateWithState() {
         Flux<String> flux = Flux.generate(
                 () -> { // Callable<S> stateSupplier
-                    System.out.println("init stateSupplier");
-                    return 0;
+                    logger.info("init stateSupplier");
+                    return 1;
                 },
                 (state, sink) -> { // BiFunction<S, SynchronousSink<T>, S> generator
-                    System.out.println("sink.next for " + state);
+                    logger.info("sink.next for " + state);
                     sink.next("3 x " + state + " = " + 3 * state); // 한 번에 한 next()만 가능
                     if (state == 10) {
-                        System.out.println("sink.complete");
+                        logger.info("sink.complete");
                         sink.complete();
                     }
                     return state + 1;
@@ -38,13 +90,13 @@ public class GenerateTest {
 
             @Override
             protected void hookOnSubscribe(Subscription subscription) {
-                System.out.println("Subscriber.onSubscribe: request next 3 items");
+                logger.info("Subscriber.onSubscribe: request next 3 items");
                 request(3);
             }
 
             @Override
             protected void hookOnNext(String value) {
-                System.out.println("Subscriber.onNext: " + value);
+                logger.info("Subscriber.onNext: " + value);
                 count++;
                 if (count % 3 == 0) {
                     System.out.println("Subscriber.onNext: request next 3 items");
@@ -54,7 +106,7 @@ public class GenerateTest {
 
             @Override
             protected void hookOnComplete() {
-                System.out.println("Subscriber.onComplete");
+                logger.info("Subscriber.onComplete");
             }
         });
 
