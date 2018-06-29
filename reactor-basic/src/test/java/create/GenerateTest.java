@@ -111,7 +111,6 @@ public class GenerateTest {
         });
 
         StepVerifier.create(flux)
-                .expectNext("3 x 0 = 0")
                 .expectNext("3 x 1 = 3")
                 .expectNext("3 x 2 = 6")
                 .expectNext("3 x 3 = 9")
