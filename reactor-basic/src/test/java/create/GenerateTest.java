@@ -25,9 +25,9 @@ public class GenerateTest {
             public void accept(SynchronousSink<Integer> sink) {
                 emitCount++;
                 int data = rand.nextInt(100) + 1;
-                logger.info("Generator sink next " + data);
-                sink.next(data);
-                if (emitCount == 10) {
+                logger.info("Generator sink next " + emitCount);
+                sink.next(emitCount);
+                if (emitCount == 200) {
                     logger.info("Generator sink complete");
                     sink.complete();
                 }
@@ -44,17 +44,18 @@ public class GenerateTest {
             protected void hookOnSubscribe(Subscription subscription) {
                 logger.info("Subscriber#onSubscribe");
                 logger.info("Subscriber request first 3 items");
-                request(3);
+                //request(3);
+                requestUnbounded();
             }
 
             @Override
             protected void hookOnNext(Integer value) {
                 logger.info("Subscriber#onNext: " + value);
                 receiveCount++;
-                if (receiveCount % 3 == 0) {
-                    logger.info("Subscriber request next 3 items");
-                    request(3);
-                }
+//                if (receiveCount % 3 == 0) {
+//                    logger.info("Subscriber request next 3 items");
+//                    request(3);
+//                }
             }
 
             @Override
@@ -63,7 +64,7 @@ public class GenerateTest {
             }
         });
         try {
-            Thread.sleep(1000L);
+            Thread.sleep(30000L);
         } catch (InterruptedException e) {
         }
     }
