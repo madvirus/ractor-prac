@@ -17,31 +17,6 @@ public class CreateTest {
     private Logger logger = LoggerFactory.getLogger(getClass());
 
     @Test
-    void pullModel() {
-        Flux<Integer> flux = Flux.create((FluxSink<Integer> sink) -> {
-            sink.onRequest(request -> {
-                logger.info("onRequest: {}, requestedFromDownstream: {}", request, sink.requestedFromDownstream());
-                for (int i = 0; i < request; i++) {
-                    logger.info("sink.next");
-                    sink.next(i);
-                }
-            });
-        });
-        flux.subscribe(new BaseSubscriber<Integer>() {
-            private int receiveCount = 0;
-            @Override
-            protected void hookOnSubscribe(Subscription subscription) {
-                request(3);
-            }
-
-            @Override
-            protected void hookOnNext(Integer value) {
-                receiveCount++;
-            }
-        });
-    }
-
-    @Test
     void fluxCreate() {
         DataPump pump = new DataPump();
 
