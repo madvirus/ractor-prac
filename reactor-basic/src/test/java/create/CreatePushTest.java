@@ -13,7 +13,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class CreateTest {
+public class CreatePushTest {
     private Logger logger = LoggerFactory.getLogger(getClass());
 
     @Test
@@ -24,21 +24,21 @@ public class CreateTest {
             pump.setListener(new DataListener<Integer>() {
                 @Override
                 public void onData(List<Integer> chunk) {
-                    System.out.println("onData: " + chunk);
+                    logger.info("onData: " + chunk);
                     chunk.forEach(s -> {
-                        System.out.println("sink.next: " + s);
+                        logger.info("sink.next: " + s);
                         sink.next(s); // push
                     });
                 }
 
                 @Override
                 public void complete() {
-                    System.out.println("complete");
+                    logger.info("complete");
                     sink.complete();
                 }
             });
             pump.start();
-        }, FluxSink.OverflowStrategy.BUFFER);
+        }, FluxSink.OverflowStrategy.IGNORE);
 
         bridge.subscribe(new SampleSubscriber<>());
 
