@@ -14,6 +14,20 @@ public class ScheduleTest {
     private Logger logger = LoggerFactory.getLogger(getClass());
 
     @Test
+    void mainThread() {
+        Flux.range(1, 3)
+                .map(i -> {
+                    logger.info("map {} to {}", i, i + 2);
+                    return i + 2;
+                })
+                .flatMap(i -> {
+                    logger.info("flatMap {} to Flux.range({}, {})", i, 1, i);
+                    return Flux.range(1, i);
+                })
+                .subscribe(i -> logger.info("next " + i));
+    }
+
+    @Test
     void publishOn() {
         Flux.range(1, 10)
                 .publishOn(Schedulers.newElastic("PUB P1"))
