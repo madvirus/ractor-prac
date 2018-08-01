@@ -8,7 +8,7 @@ import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
-import java.util.logging.Level;
+import java.util.concurrent.CountDownLatch;
 
 public class ScheduleTest {
     private Logger logger = LoggerFactory.getLogger(getClass());
@@ -28,10 +28,21 @@ public class ScheduleTest {
     }
 
     @Test
-    void publishOn() {
-        Flux.range(1, 10)
-                .publishOn(Schedulers.newElastic("PUB P1"))
-                .log(null, Level.FINE)
+    void publishOn() throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch(1);
+        Flux.range(1, 6)
+                .log()
+                //.log(null, Level.FINE)
+                .map(i -> {
+                    logger.info("map 1: {} + 10", i);
+                    return i + 10;
+                })
+                .publishOn(Schedulers.newElastic("PUB1"), 2)
+                .map(i -> {
+                    logger.info("map 2: {} + 10", i);
+                    return i + 10;
+                })
+                .publishOn(Schedulers.newElastic("PUB2"), 3)
                 .subscribe(new BaseSubscriber<Integer>() {
                     @Override
                     protected void hookOnSubscribe(Subscription subscription) {
@@ -42,60 +53,74 @@ public class ScheduleTest {
                     @Override
                     protected void hookOnNext(Integer value) {
                         logger.info("hookOnNext: " + value); // PUB P1 쓰레드
+                        try {
+                            Thread.sleep(10);
+                        } catch (InterruptedException e) {
+                        }
                     }
 
                     @Override
                     protected void hookOnComplete() {
                         logger.info("hookOnComplete"); // PUB P1 쓰레드
+                        latch.countDown();
                     }
                 });
+        latch.await();
     }
 
     @Test
     void subscribeOn() throws Exception {
-        Flux.range(1, 10)
+        CountDownLatch latch = new CountDownLatch(1);
+        Flux.range(1, 6)
                 .log()
-                .subscribeOn(Schedulers.newParallel("SUB E1", 2))
+                .subscribeOn(Schedulers.newElastic("SUB", 10, false))
+                .map(i -> {
+                    logger.info("map: {} + 10", i);
+                    return i + 10;
+                })
                 .subscribe(new BaseSubscriber<Integer>() {
                     @Override
                     protected void hookOnSubscribe(Subscription subscription) {
                         logger.info("hookOnSubscribe"); // main thread
-                        requestUnbounded();
+                        request(1);
                     }
 
                     @Override
                     protected void hookOnNext(Integer value) {
-                        logger.info("hookOnNext: " + value); // SUB E1-1 쓰레드
+                        logger.info("hookOnNext: " + value); // SUB 쓰레드
+                        request(1);
                     }
 
                     @Override
                     protected void hookOnComplete() {
-                        logger.info("hookOnComplete"); // SUB E1-1 쓰레드
+                        logger.info("hookOnComplete"); // SUB 쓰레드
+                        latch.countDown();
                     }
                 });
 
-        Thread.sleep(1000);
+        latch.await();
     }
 
     @Test
     void pubSubOn() throws Exception {
+        CountDownLatch latch = new CountDownLatch(1);
         Flux.range(1, 6)
                 .log()
+                .subscribeOn(Schedulers.newElastic("SUB"))
                 .map(i -> {
                     logger.info("map1: " + i + " --> " + (i + 20));
                     return i + 20;
                 })
-                .subscribeOn(Schedulers.newParallel("SUB", 2))
                 .map(i -> {
-                    logger.info("map2: " + i + " --> " + (i + 100));
+                    logger.info("mapBySub: " + i + " --> " + (i + 100));
                     return i + 100;
                 })
-                .publishOn(Schedulers.newParallel("PUB1", 2))
+                .publishOn(Schedulers.newElastic("PUB1"), 2)
                 .map(i -> {
-                    logger.info("map3: " + i + " --> " + (i + 1000));
+                    logger.info("mapByPub1: " + i + " --> " + (i + 1000));
                     return i + 1000;
                 })
-                .publishOn(Schedulers.newParallel("PUB2", 2))
+                .publishOn(Schedulers.newElastic("PUB2"), 2)
                 .subscribe(new BaseSubscriber<Integer>() {
                     @Override
                     protected void hookOnSubscribe(Subscription subscription) {
@@ -112,9 +137,10 @@ public class ScheduleTest {
                     @Override
                     protected void hookOnComplete() {
                         logger.info("hookOnComplete"); // PUB 쓰레드
+                        latch.countDown();
                     }
                 });
 
-        Thread.sleep(1000);
+        latch.await();
     }
 }
