@@ -83,7 +83,7 @@ public class WebClientTest {
 
         CountDownLatch latch = new CountDownLatch(1);
         logger.info("start subscribe");
-        Mono.zip(hello1, hello2, hello3, hello4).subscribe(tup -> {
+        Mono.zip(hello1, hello2, hello3, hello4).log().subscribe(tup -> {
             logger.info("receive: " + tup.getT1() + ", " + tup.getT2() + ", " + tup.getT3() + ", " + tup.getT4());
             latch.countDown();
         });
