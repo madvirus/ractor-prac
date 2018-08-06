@@ -52,14 +52,19 @@ public class WindowTest {
 
     @Test
     void windowUntil() {
-        Flux.just(1,1,2,3,3,4,5)
+        Flux.just(1,1,2,3,3,4)
                 .windowUntil(x -> x % 2 == 0)
                 .subscribe(seq -> {
                     seq.collectList().subscribe(lst -> logger.info("window: {}", lst));
                 });
+    }
 
-        Flux.just(1,1,2,3,3,4,5)
-                .bufferUntil(x -> x % 2 == 0)
-                .subscribe(lst -> logger.info("window: {}", lst));
+    @Test
+    void windowWhile() {
+        Flux.just(1,1,2,4,3,3,4,6,8,9,10)
+                .windowWhile(x -> x % 2 == 0)
+                .subscribe(seq -> {
+                    seq.collectList().subscribe(lst -> logger.info("window: {}", lst));
+                });
     }
 }
