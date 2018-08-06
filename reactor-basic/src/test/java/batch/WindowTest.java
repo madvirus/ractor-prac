@@ -49,4 +49,17 @@ public class WindowTest {
 
         sleep(5000);
     }
+
+    @Test
+    void windowUntil() {
+        Flux.just(1,1,2,3,3,4,5)
+                .windowUntil(x -> x % 2 == 0)
+                .subscribe(seq -> {
+                    seq.collectList().subscribe(lst -> logger.info("window: {}", lst));
+                });
+
+        Flux.just(1,1,2,3,3,4,5)
+                .bufferUntil(x -> x % 2 == 0)
+                .subscribe(lst -> logger.info("window: {}", lst));
+    }
 }
